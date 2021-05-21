@@ -1,8 +1,10 @@
-#include "str.h"
+#include "parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "cJSON.h"
 
 int init_string_base(struct string* str)
 {
@@ -57,6 +59,38 @@ void print_string(struct string* str)
     putc(str->data[i], stdout);
   }
   putc('\n', stdout);
+}
+
+int get_repos(struct string* str)
+{
+  //
+  cJSON* json = cJSON_Parse(str->data);
+  cJSON* repo = NULL;
+
+  int status = 1;
+  if (json == NULL)
+  {
+    const char* error_ptr = cJSON_GetErrorPtr();
+    if (error_ptr != NULL)
+    {
+      fprintf(stderr, "Error before: %s\n", error_ptr);
+      status = 0;
+      goto cleanup;
+    }
+  }
+
+  cJSON_ArrayForEach(repo, json)
+  {
+    cJSON* full_name = cJSON_GetObjectItemCaseSensitive(repo, "full_name");
+    if (cJSON_IsString(full_name) && (full_name->valuestring != NULL))
+    {
+      printf("%s\n", full_name->valuestring);
+    }
+  }
+
+cleanup:
+  cJSON_Delete(json);
+  return status;
 }
 
 // Shamelessly stolen from glibc, since strdup is not POSIX compliant.
