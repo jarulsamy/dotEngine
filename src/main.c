@@ -4,18 +4,23 @@
 
 #include "http.h"
 #include "ini.h"
-#include "str.h"
+#include "parser.h"
 #include "username.h"
 
+const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
 int main()
 {
-  const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+  char* full_path;
+  char* url;
+
+  // Track errors - return code
+  int ret = 0;
 
   // Get the full path of ~/.gitconfig
-  const char *home = getenv("HOME");
-  const char *filename = "/.gitconfig";
+  const char* home = getenv("HOME");
+  const char* filename = "/.gitconfig";
   size_t len = strlen(home) + strlen(filename) + 1;
-  char *full_path = malloc(sizeof(char) * len);
+  full_path = malloc(sizeof(char) * len);
   strcpy(full_path, home);
   strcat(full_path, filename);
 
@@ -24,13 +29,34 @@ int main()
   if (ini_parse(full_path, handler, &config) < 0)
   {
     printf("Can't load '%s'\n", full_path);
-    return 1;
+    ret = 1;
+    goto cleanup;
   }
-  printf("Config loaded from '%s': name=%s, email=%s\n", full_path, config.name,
-         config.email);
+  printf("Config loaded from '%s': name=%s, email=%s, username=%s\n", full_path,
+         config.name, config.email, config.username);
 
+  // Get the real url to HTTP GET.
+  size_t sz = snprintf(NULL, 0, base_url, config.username);
+  url = (char*)malloc(sz + 1);
+  if (url == NULL)
+  {
+    fprintf(stderr, "Couldn't allocate memory!");
+    ret = 1;
+    goto cleanup;
+  }
+  snprintf(url, sz + 1, base_url, config.username);
+  printf("URL: %s\n", url);
+
+  struct string raw_data;
+  http_get(url, &raw_data);
+
+  get_repos(&raw_data);
+
+cleanup:
   free(full_path);
+  free(url);
   free_configuration(&config);
+  free_string(&raw_data);
 
-  return 0;
+  return ret;
 }
