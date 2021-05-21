@@ -61,6 +61,14 @@ all: $(TARGET)
 .PHONY: debug
 debug: $(TARGET_DEBUG)
 
+.PHONY: memcheck
+memcheck: all
+	$(shell valgrind --leak-check=full \
+					 --show-leak-kinds=all \
+					 --track-origins=yes \
+					 --verbose \
+  				 	 bin/main)
+
 .PHONY: clean
 clean:
 	@echo CLEAN $(CLEAN_LIST)
@@ -70,3 +78,7 @@ clean:
 distclean:
 	@echo CLEAN $(CLEAN_LIST)
 	@rm -f $(DISTCLEAN_LIST)
+
+.PHONY: ctags
+ctags:
+	$(shell ctags --recurse=yes --exclude=.git --exclude=BUILD --exclude=.svn --exclude=vendor/* --exclude=node_modules/* --exclude=db/* --exclude=log/* .)
