@@ -1,7 +1,7 @@
 
 #include "username.h"
 
-#include "str.h"
+#include "parser.h"
 
 /* #include <stdio.h> */
 #include <stdlib.h>
@@ -11,9 +11,11 @@ void free_configuration(struct configuration* config)
 {
   if (config->name != NULL) free(config->name);
   if (config->email != NULL) free(config->email);
+  if (config->username != NULL) free(config->username);
 
   config->name = NULL;
   config->email = NULL;
+  config->username = NULL;
 }
 
 int handler(void* user, const char* section, const char* name,
@@ -30,6 +32,11 @@ int handler(void* user, const char* section, const char* name,
   {
     pconfig->email = strdup(value);
   }
+  else if (MATCH("user", "username"))
+  {
+    pconfig->username = strdup(value);
+  }
+
   else
   {
     // Unknown section / name, error.

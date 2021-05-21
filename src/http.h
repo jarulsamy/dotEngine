@@ -2,6 +2,6 @@
 
 #include <stdlib.h>
 
-#include "str.h"
+#include "parser.h"
 
 int http_get(char const *url, struct string *str);
