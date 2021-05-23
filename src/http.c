@@ -60,7 +60,10 @@ int http_get(char const *url, struct string *str)
     /* fetch the url */
     res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
-    return 1;
+    if (res == 0)
+    {
+      return 1;
+    }
   }
 
   return 0;
