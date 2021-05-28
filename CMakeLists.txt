@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
-project(dotEngine C)
+project(
+  dotEngine
+  VERSION 1.0
+  DESCRIPTION "DotEngine, TODO"
+  LANGUAGES C)
+configure_file(src/config.h.in config.h)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
@@ -40,6 +45,9 @@ set(SRC_FILES
     ${inih_SOURCE_DIR}/ini.c)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
+# Include for config
+target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_BINARY_DIR}")
+
 # cURL
 find_package(CURL REQUIRED)
 include_directories(${CURL_INCLUDE_DIR})
@@ -51,6 +59,5 @@ target_link_libraries(${PROJECT_NAME} curl cjson)
 if(MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
 else()
-  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic
-                                                 -Werror)
+  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -pedantic -Werror)
 endif()
