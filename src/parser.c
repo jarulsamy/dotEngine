@@ -22,27 +22,20 @@ int init_string_base(struct string* str)
 int init_string_cstr(char const* c_str, struct string* str)
 {
   str->length = strlen(c_str) + 1;
-  // Allocate enough space for the new string.
-  str->data = malloc(sizeof(char) * (unsigned)str->length);
+  str->data = strdup(c_str);
   if (!str->data)
   {
     return 0;
   }
-  strcpy(str->data, c_str);
 
   return 1;
 }
 
 void free_string(struct string* str)
 {
-  // Already freed, just return
-  if (str->length == -1)
-  {
-    return;
-  }
-
   str->length = -1;
   free(str->data);
+  str->data = NULL;
 }
 
 void print_string(struct string* str)
@@ -82,7 +75,6 @@ int get_repos(struct string* str, struct repo** repos, size_t* count)
       break;
     }
     struct repo* current = &(*repos)[*count];
-    printf("count=%zu\n", *count);
     init_repo(current);
 
     // Name
@@ -137,8 +129,6 @@ int get_repos(struct string* str, struct repo** repos, size_t* count)
     }
 
     (*count)++;
-
-    print_repo(current);
   }
 
 cleanup:
