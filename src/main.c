@@ -1,19 +1,28 @@
 
+#include <argp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "config.h"
 #include "http.h"
 #include "ini.h"
 #include "parser.h"
 #include "repo.h"
 #include "username.h"
 
-const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+const char* argp_program_version = dotEngine_VERSION;
+const char* argp_program_bug_address = "<joshua.gf.arul@gmail.com>";
 
-int main()
+/* Argument parsing */
+static char doc[] = dotEngine_DESCRIPTION;
+static struct argp argp = {0, 0, 0, doc};
+
+const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+int main(int argc, char** argv)
 {
-  char* full_path;
+  argp_parse(&argp, argc, argv, 0, 0, 0);
+
   char* url = NULL;
   struct repo* repos = NULL;
 
@@ -24,7 +33,7 @@ int main()
   const char* home = getenv("HOME");
   const char* filename = "/.gitconfig";
   size_t len = strlen(home) + strlen(filename) + 1;
-  full_path = malloc(sizeof(char) * len);
+  char* full_path = malloc(sizeof(char) * len);
   strcpy(full_path, home);
   strcat(full_path, filename);
 
@@ -39,7 +48,7 @@ int main()
   printf("Config loaded from '%s': name=%s, email=%s, username=%s\n", full_path,
          config.name, config.email, config.username);
 
-  // Get the real url to HTTP GET.
+  // Get the real url to GitHub API
   size_t sz = snprintf(NULL, 0, base_url, config.username);
   url = (char*)malloc(sz + 1);
   if (url == NULL)
@@ -52,12 +61,18 @@ int main()
   printf("URL: %s\n", url);
 
   struct string raw_data;
-  http_get(url, &raw_data);
+  if (!http_get(url, &raw_data))
+  {
+    fprintf(stderr, "Can't connect to Github API... internet connectivity?\n");
+    ret = 1;
+    goto cleanup;
+  }
 
   size_t num_repos;
-  get_repos(&raw_data, &repos, &num_repos);
-  if (repos == NULL)
+  if (!get_repos(&raw_data, &repos, &num_repos) || repos == NULL)
   {
+    fprintf(stderr, "Couldn't parse response from GitHub API\n");
+    ret = 1;
     goto cleanup;
   }
 

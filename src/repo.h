@@ -17,5 +17,5 @@ struct repo
 };
 
 void init_repo(struct repo* r);
-void free_repo(struct repo* r);
+void free_repo(const struct repo* r);
 void print_repo(const struct repo* r);

@@ -15,7 +15,7 @@ void init_repo(struct repo* r)
   r->html_url = NULL;
 }
 
-void free_repo(struct repo* r)
+void free_repo(const struct repo* r)
 {
   free(r->name);
   free(r->owner);
