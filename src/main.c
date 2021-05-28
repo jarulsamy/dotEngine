@@ -11,18 +11,40 @@
 #include "repo.h"
 #include "username.h"
 
-const char* argp_program_version = dotEngine_VERSION;
-const char* argp_program_bug_address = "<joshua.gf.arul@gmail.com>";
-
 /* Argument parsing */
-static char doc[] = dotEngine_DESCRIPTION;
-static struct argp argp = {0, 0, 0, doc};
+const char* argp_program_version = dotEngine_VERSION;
+/* static const char argp_bug_address[] = "<joshua.gf.arul@gmail.com>"; */
+static const char args_doc[] = "";
+static const char doc[] = dotEngine_DESCRIPTION;
 
-const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+static struct argp_option options[] = {
+    {"verbose", 'v', 0, 0, "Produce verbose output."},
+    {"force", 'f', 0, 0, "Ignore the cache and force a GET."},
+    {"output", 'o', "FILE", 0, "Output to FILE instead of stdout"},
+    {0}};
+
+struct arguments
+{
+  int verbose, force;
+  char* output_file;
+};
+
+// Parse a single option
+static error_t parse_opt(int key, char* arg, struct argp_state* state);
+
+// My arg parse
+static struct argp argp = {options, parse_opt, args_doc, doc};
 int main(int argc, char** argv)
 {
-  argp_parse(&argp, argc, argv, 0, 0, 0);
+  struct arguments arguments;
+  // Default argument options
+  arguments.verbose = 0;
+  arguments.force = 0;
+  arguments.output_file = "-";
 
+  argp_parse(&argp, argc, argv, 0, 0, &arguments);
+
+  const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
   char* url = NULL;
   struct repo* repos = NULL;
 
@@ -45,9 +67,6 @@ int main(int argc, char** argv)
     ret = 1;
     goto cleanup;
   }
-  printf("Config loaded from '%s': name=%s, email=%s, username=%s\n", full_path,
-         config.name, config.email, config.username);
-
   // Get the real url to GitHub API
   size_t sz = snprintf(NULL, 0, base_url, config.username);
   url = (char*)malloc(sz + 1);
@@ -58,7 +77,12 @@ int main(int argc, char** argv)
     goto cleanup;
   }
   snprintf(url, sz + 1, base_url, config.username);
+
+#ifndef NDEBUG
+  printf("Config loaded from '%s': name=%s, email=%s, username=%s\n", full_path,
+         config.name, config.email, config.username);
   printf("URL: %s\n", url);
+#endif
 
   struct string raw_data;
   if (!http_get(url, &raw_data))
@@ -92,4 +116,34 @@ cleanup:
   }
 
   return ret;
+}
+
+static error_t parse_opt(int key, char* arg, struct argp_state* state)
+{
+  /* Get the input argument from argp_parse, which we
+     know is a pointer to our arguments structure. */
+  struct arguments* arguments = state->input;
+
+  switch (key)
+  {
+    case 'v':
+      arguments->verbose = 1;
+      break;
+    case 'f':
+      arguments->force = 1;
+      break;
+    case 'o':
+      arguments->output_file = arg;
+      break;
+
+    case ARGP_KEY_ARG:
+      if (state->argc > 0) /* Too many arguments. */
+        argp_usage(state);
+
+      break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
+  }
+  return 0;
 }

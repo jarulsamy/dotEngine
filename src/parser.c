@@ -124,8 +124,7 @@ cleanup:
   return status;
 }
 
-// Shamelessly stolen from glibc, since strdup is not available on all
-// compilers.
+// Shamelessly stolen from glibc.
 #ifndef strdup
 // Duplicate S, returning an identical malloc'd string.
 char* strdup(const char* s)
@@ -135,4 +134,4 @@ char* strdup(const char* s)
   if (new == NULL) return NULL;
   return (char*)memcpy(new, s, len);
 }
-#endif /* strndup */
+#endif /* strdup */

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// callback for curl fetch
+// Callback for curl fetch
 static size_t curl_callback(void *contents, size_t size, size_t nmemb,
                             void *userp)
 {
@@ -14,12 +14,9 @@ static size_t curl_callback(void *contents, size_t size, size_t nmemb,
 
   // Expand buffer using a temporary pointer to avoid memory leaks
   char *temp = realloc(p->data, p->length + real_size + 1);
-
-  // Check allocation
   if (temp == NULL)
   {
     fprintf(stderr, "ERROR: Failed to expand buffer in curl_callback");
-    // free buffer
     free_string(p);
     return 0;
   }
@@ -57,7 +54,7 @@ int http_get(char const *url, struct string *str)
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
     curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
 
-    /* fetch the url */
+    // Fetch the URL
     res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
     if (res == 0)
