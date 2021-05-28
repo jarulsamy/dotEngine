@@ -21,14 +21,7 @@ int init_string_base(struct string* str)
 
 int init_string_cstr(char const* c_str, struct string* str)
 {
-  size_t len = 0;
-  // Get the length of the raw string.
-  while (c_str[len] != '\0')
-  {
-    len++;
-  }
-  str->length = len;
-
+  str->length = strlen(c_str) + 1;
   // Allocate enough space for the new string.
   str->data = malloc(sizeof(char) * (unsigned)str->length);
   if (!str->data)
@@ -43,7 +36,7 @@ int init_string_cstr(char const* c_str, struct string* str)
 void free_string(struct string* str)
 {
   // Already freed, just return
-  if (str->length == 1)
+  if (str->length == -1)
   {
     return;
   }
@@ -61,31 +54,91 @@ void print_string(struct string* str)
   putc('\n', stdout);
 }
 
-int get_repos(struct string* str)
+int get_repos(struct string* str, struct repo** repos, size_t* count)
 {
-  //
-  cJSON* json = cJSON_Parse(str->data);
-  cJSON* repo = NULL;
+  const size_t MAX_REPOS = 250;
 
+  // Track errors as a bool, 0 - error occured, 1 - success.
   int status = 1;
-  if (json == NULL)
+
+  cJSON* json = cJSON_Parse(str->data);
+  cJSON* repo_json = NULL;
+
+  // Default to 250 possible repos, in theory this is the maximum ever possible
+  // to be received from the github api.
+  // TODO: Grow this array when necessary.
+  *repos = malloc(sizeof(struct repo) * MAX_REPOS);
+  if (*repos == NULL || json == NULL)
   {
-    const char* error_ptr = cJSON_GetErrorPtr();
-    if (error_ptr != NULL)
-    {
-      fprintf(stderr, "Error before: %s\n", error_ptr);
-      status = 0;
-      goto cleanup;
-    }
+    status = 0;
+    goto cleanup;
   }
 
-  cJSON_ArrayForEach(repo, json)
+  *count = 0;
+  cJSON_ArrayForEach(repo_json, json)
   {
-    cJSON* full_name = cJSON_GetObjectItemCaseSensitive(repo, "full_name");
-    if (cJSON_IsString(full_name) && (full_name->valuestring != NULL))
+    if (*count >= MAX_REPOS)
     {
-      printf("%s\n", full_name->valuestring);
+      break;
     }
+    struct repo* current = &(*repos)[*count];
+    printf("count=%zu\n", *count);
+    init_repo(current);
+
+    // Name
+    cJSON* name = cJSON_GetObjectItemCaseSensitive(repo_json, "name");
+    if (cJSON_IsString(name) && (name->valuestring != NULL))
+    {
+      current->name = strdup(name->valuestring);
+    }
+
+    // Owner
+    cJSON* owner = cJSON_GetObjectItemCaseSensitive(repo_json, "owner");
+    cJSON* login = cJSON_GetObjectItemCaseSensitive(owner, "login");
+    if (cJSON_IsString(login) && (login->valuestring != NULL))
+    {
+      current->owner = strdup(login->valuestring);
+    }
+
+    // Description
+    cJSON* description =
+        cJSON_GetObjectItemCaseSensitive(repo_json, "description");
+    if (cJSON_IsString(description) && (description->valuestring != NULL))
+    {
+      current->description = strdup(description->valuestring);
+    }
+
+    // git_url
+    cJSON* git_url = cJSON_GetObjectItemCaseSensitive(repo_json, "git_url");
+    if (cJSON_IsString(git_url) && (git_url->valuestring != NULL))
+    {
+      current->git_url = strdup(git_url->valuestring);
+    }
+
+    // ssh_url
+    cJSON* ssh_url = cJSON_GetObjectItemCaseSensitive(repo_json, "ssh_url");
+    if (cJSON_IsString(name) && (ssh_url->valuestring != NULL))
+    {
+      current->ssh_url = strdup(ssh_url->valuestring);
+    }
+
+    // clone_url
+    cJSON* clone_url = cJSON_GetObjectItemCaseSensitive(repo_json, "clone_url");
+    if (cJSON_IsString(clone_url) && (clone_url->valuestring != NULL))
+    {
+      current->clone_url = strdup(clone_url->valuestring);
+    }
+
+    // html_url
+    cJSON* html_url = cJSON_GetObjectItemCaseSensitive(repo_json, "html_url");
+    if (cJSON_IsString(html_url) && (html_url->valuestring != NULL))
+    {
+      current->html_url = strdup(html_url->valuestring);
+    }
+
+    (*count)++;
+
+    print_repo(current);
   }
 
 cleanup:
@@ -93,27 +146,15 @@ cleanup:
   return status;
 }
 
-// Shamelessly stolen from glibc, since strdup is not POSIX compliant.
+// Shamelessly stolen from glibc, since strdup is not available on all
+// compilers.
 #ifndef strdup
-
-#ifndef weak_alias
-#define __strdup strdup
-#endif /* weak alias */
-
 // Duplicate S, returning an identical malloc'd string.
-char* __strdup(const char* s)
+char* strdup(const char* s)
 {
   size_t len = strlen(s) + 1;
   void* new = malloc(len);
   if (new == NULL) return NULL;
   return (char*)memcpy(new, s, len);
 }
-#ifdef libc_hidden_def
-libc_hidden_def(__strdup)
-#endif /* libc_hidden_def */
-
-#ifdef weak_alias
-    weak_alias(__strdup, strdup)
-#endif /* weak alias */
-
 #endif /* strndup */

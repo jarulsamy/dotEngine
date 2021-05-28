@@ -34,6 +34,7 @@ set(SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/http.c
     ${PROJECT_SOURCE_DIR}/src/main.c
     ${PROJECT_SOURCE_DIR}/src/parser.c
+    ${PROJECT_SOURCE_DIR}/src/repo.c
     ${PROJECT_SOURCE_DIR}/src/username.c
     # External dependencies, inih doesn't use cmake :(
     ${inih_SOURCE_DIR}/ini.c)
@@ -46,7 +47,7 @@ include_directories(${CURL_INCLUDE_DIR})
 # Linking
 target_link_libraries(${PROJECT_NAME} curl cjson)
 
-# Compiler warnings
+# Compiler warnings, platform specific.
 if(MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
 else()

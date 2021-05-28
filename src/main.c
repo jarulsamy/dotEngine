@@ -1,17 +1,21 @@
 
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "http.h"
 #include "ini.h"
 #include "parser.h"
+#include "repo.h"
 #include "username.h"
 
 const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+
 int main()
 {
   char* full_path;
-  char* url;
+  char* url = NULL;
+  struct repo* repos = NULL;
 
   // Track errors - return code
   int ret = 0;
@@ -50,13 +54,27 @@ int main()
   struct string raw_data;
   http_get(url, &raw_data);
 
-  get_repos(&raw_data);
+  size_t num_repos;
+  get_repos(&raw_data, &repos, &num_repos);
+  if (repos == NULL)
+  {
+    goto cleanup;
+  }
 
 cleanup:
   free(full_path);
   free(url);
   free_configuration(&config);
   free_string(&raw_data);
+
+  if (repos != NULL)
+  {
+    for (size_t i = 0; i < num_repos; i++)
+    {
+      free_repo(&repos[i]);
+    }
+    free(repos);
+  }
 
   return ret;
 }
