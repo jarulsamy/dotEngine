@@ -19,18 +19,6 @@ int init_string_base(struct string* str)
   return 0;
 }
 
-int init_string_cstr(char const* c_str, struct string* str)
-{
-  str->length = strlen(c_str) + 1;
-  str->data = strdup(c_str);
-  if (!str->data)
-  {
-    return 0;
-  }
-
-  return 1;
-}
-
 void free_string(struct string* str)
 {
   str->length = -1;
