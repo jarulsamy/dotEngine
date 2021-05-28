@@ -8,10 +8,6 @@
 
 void free_configuration(struct configuration* config)
 {
-  if (config->name != NULL) free(config->name);
-  if (config->email != NULL) free(config->email);
-  if (config->username != NULL) free(config->username);
-
   config->name = NULL;
   config->email = NULL;
   config->username = NULL;
