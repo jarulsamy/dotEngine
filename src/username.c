@@ -6,11 +6,21 @@
 
 #include "parser.h"
 
-void free_configuration(struct configuration* config)
+void init_configuration(struct configuration* config)
 {
   config->name = NULL;
   config->email = NULL;
   config->username = NULL;
+}
+
+void free_configuration(struct configuration* config)
+{
+  free(config->name);
+  free(config->email);
+  free(config->username);
+
+  // Set all members to NULL
+  init_configuration(config);
 }
 
 int handler(void* user, const char* section, const char* name,
@@ -31,10 +41,9 @@ int handler(void* user, const char* section, const char* name,
   {
     pconfig->username = strdup(value);
   }
-
+  // Unknown section / name, error.
   else
   {
-    // Unknown section / name, error.
     return 0;
   }
 

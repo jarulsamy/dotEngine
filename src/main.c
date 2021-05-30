@@ -25,7 +25,8 @@ static struct argp_option options[] = {
 
 struct arguments
 {
-  int verbose, force;
+  int verbose;
+  int force;
   char* output_file;
 };
 
@@ -48,6 +49,10 @@ int main(int argc, char** argv)
   char* url = NULL;
   struct repo* repos = NULL;
 
+  // Receiver for data from GitHub API
+  struct string raw_data;
+  init_string_base(&raw_data);
+
   // Track errors - return code
   int ret = 0;
 
@@ -61,22 +66,24 @@ int main(int argc, char** argv)
 
   // Load username from file
   struct configuration config;
-  if (ini_parse(full_path, handler, &config) < 0)
+  init_configuration(&config);
+  if (ini_parse(full_path, handler, &config) < 0 || config.username == NULL)
   {
-    printf("Can't load '%s'\n", full_path);
+    fprintf(stderr, "Can't load '%s'\n", full_path);
     ret = 1;
     goto cleanup;
   }
+
   // Get the real url to GitHub API
-  size_t sz = snprintf(NULL, 0, base_url, config.username);
-  url = (char*)malloc(sz + 1);
+  size_t sz = snprintf(NULL, 0, base_url, config.username) + 1;
+  url = (char*)malloc(sz);
   if (url == NULL)
   {
     fprintf(stderr, "Couldn't allocate memory!");
     ret = 1;
     goto cleanup;
   }
-  snprintf(url, sz + 1, base_url, config.username);
+  snprintf(url, sz, base_url, config.username);
 
 #ifndef NDEBUG
   printf("Config loaded from '%s': name=%s, email=%s, username=%s\n", full_path,
@@ -84,7 +91,6 @@ int main(int argc, char** argv)
   printf("URL: %s\n", url);
 #endif
 
-  struct string raw_data;
   if (!http_get(url, &raw_data))
   {
     fprintf(stderr, "Can't connect to Github API... internet connectivity?\n");
@@ -95,7 +101,7 @@ int main(int argc, char** argv)
   size_t num_repos;
   if (!get_repos(&raw_data, &repos, &num_repos) || repos == NULL)
   {
-    fprintf(stderr, "Couldn't parse response from GitHub API\n");
+    fprintf(stderr, "Couldn't parse response from GitHub API.\n");
     ret = 1;
     goto cleanup;
   }
@@ -120,8 +126,6 @@ cleanup:
 
 static error_t parse_opt(int key, char* arg, struct argp_state* state)
 {
-  /* Get the input argument from argp_parse, which we
-     know is a pointer to our arguments structure. */
   struct arguments* arguments = state->input;
 
   switch (key)
@@ -139,7 +143,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
     case ARGP_KEY_ARG:
       if (state->argc > 0) /* Too many arguments. */
         argp_usage(state);
-
       break;
 
     default:
