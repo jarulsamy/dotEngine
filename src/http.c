@@ -42,7 +42,6 @@ int http_get(char const *url, struct string *str)
   CURLcode res;
 
   curl = curl_easy_init();
-  init_string_base(str);
 
   if (curl)
   {
