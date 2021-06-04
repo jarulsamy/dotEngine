@@ -38,7 +38,7 @@ void repo_print(const struct repo* r)
   printf("%s\n", r->name);
 }
 
-void repo_pretty_print(const struct repo* r)
+void repo_print_pretty(const struct repo* r)
 {
   if (r == NULL)
   {
@@ -54,6 +54,20 @@ void repo_pretty_print(const struct repo* r)
   printf("clone_url: %s\n", r->clone_url);
   printf("html_url: %s\n", r->html_url);
   printf("====================\n");
+}
+
+void repo_print_zshsuggestion(const struct repo* repos, const size_t num)
+{
+  if (repos == NULL)
+  {
+    return;
+  }
+
+  for (size_t i = 0; i < num; i++)
+  {
+    printf("'%s:%s ", repos[i].name, repos[i].description);
+  }
+  putc('\n', stdout);
 }
 
 // Shamelessly stolen from glibc.

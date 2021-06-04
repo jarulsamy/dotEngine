@@ -22,7 +22,8 @@ struct repo
 void repo_init(struct repo* r);
 void free_repo(const struct repo* r);
 void repo_print(const struct repo* r);
-void repo_pretty_print(const struct repo* r);
+void repo_print_pretty(const struct repo* r);
+void repo_print_zshsuggestion(const struct repo* r, const size_t num);
 
 #ifndef strdup
 char* strdup(const char* c_str);
