@@ -37,11 +37,10 @@ include_directories(${inih_SOURCE_DIR} ${cJSON_SOURCE_DIR})
 # Add src files
 set(SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/http.c
+    ${PROJECT_SOURCE_DIR}/src/io.c
     ${PROJECT_SOURCE_DIR}/src/main.c
-    ${PROJECT_SOURCE_DIR}/src/parser.c
     ${PROJECT_SOURCE_DIR}/src/repo.c
-    ${PROJECT_SOURCE_DIR}/src/username.c
-    # External dependencies, inih doesn't use cmake :(
+    # External dependencies, inih doesn't use cmake
     ${inih_SOURCE_DIR}/ini.c)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 

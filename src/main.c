@@ -3,13 +3,13 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "http.h"
 #include "ini.h"
-#include "parser.h"
+#include "io.h"
 #include "repo.h"
-#include "username.h"
 
 /* Argument parsing */
 const char* argp_program_version = dotEngine_VERSION;
@@ -35,6 +35,11 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state);
 
 // My arg parse
 static struct argp argp = {options, parse_opt, args_doc, doc};
+
+/* Constants */
+const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+const char* CACHE_FNAME = "./test.dat";
+
 int main(int argc, char** argv)
 {
   struct arguments arguments;
@@ -45,29 +50,51 @@ int main(int argc, char** argv)
 
   argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-  const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+  // Future dynamic allocations, forward defined for easy cleanup
   char* url = NULL;
   struct repo* repos = NULL;
+  char* full_path = NULL;
+  struct config config;
+  config_init(&config);
 
   // Receiver for data from GitHub API
-  struct string raw_data;
-  init_string_base(&raw_data);
+  char* raw_data = NULL;
 
   // Track errors - return code
   int ret = 0;
+
+  if (!arguments.force && access(CACHE_FNAME, F_OK) == 0)
+  {
+    // Read from disk
+    size_t count;
+    FILE* read_fp = fopen("./test.dat", "r");
+    if (read_fp == NULL || !repo_from_file(read_fp, &repos, &count))
+    {
+      fprintf(stderr, "Couldn't read from disk.\n");
+      ret = 1;
+      goto cleanup;
+    }
+    fclose(read_fp);
+
+    for (size_t i = 0; i < count; i++)
+    {
+      repo_pretty_print(&repos[i]);
+    }
+
+    goto cleanup;
+  }
 
   // Get the full path of ~/.gitconfig
   const char* home = getenv("HOME");
   const char* filename = "/.gitconfig";
   size_t len = strlen(home) + strlen(filename) + 1;
-  char* full_path = malloc(sizeof(char) * len);
+  full_path = malloc(sizeof(char) * len);
   strcpy(full_path, home);
   strcat(full_path, filename);
 
   // Load username from file
-  struct configuration config;
-  init_configuration(&config);
-  if (ini_parse(full_path, handler, &config) < 0 || config.username == NULL)
+  if (ini_parse(full_path, config_ini_handler, &config) < 0 ||
+      config.username == NULL)
   {
     fprintf(stderr, "Can't load '%s'\n", full_path);
     ret = 1;
@@ -91,6 +118,7 @@ int main(int argc, char** argv)
   printf("URL: %s\n", url);
 #endif
 
+  // Talk to the API
   if (!http_get(url, &raw_data))
   {
     fprintf(stderr, "Can't connect to Github API... internet connectivity?\n");
@@ -98,19 +126,30 @@ int main(int argc, char** argv)
     goto cleanup;
   }
 
+  // Parse the response from Github
   size_t num_repos;
-  if (!get_repos(&raw_data, &repos, &num_repos) || repos == NULL)
+  if (!parse_repos(raw_data, &repos, &num_repos) || repos == NULL)
   {
     fprintf(stderr, "Couldn't parse response from GitHub API.\n");
     ret = 1;
     goto cleanup;
   }
 
+  // Save to disk
+  FILE* dest_fp = fopen("./test.dat", "w");
+  if (dest_fp == NULL || !repo_to_file(dest_fp, repos, num_repos))
+  {
+    fprintf(stderr, "Couldn't write to disk.\n");
+    ret = 1;
+    goto cleanup;
+  }
+  fclose(dest_fp);
+
 cleanup:
   free(full_path);
   free(url);
-  free_configuration(&config);
-  free_string(&raw_data);
+  config_free(&config);
+  free(raw_data);
 
   if (repos != NULL)
   {
