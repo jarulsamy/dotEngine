@@ -3,7 +3,7 @@
 Python script to help manage project settings
 
 Usage:
-    setup.py dev [-f]
+    setup.py (dev|prod) [-f]
     setup.py clean
     setup.py -h | --help | --version
 """
@@ -43,7 +43,7 @@ def dev():
         [
             "cmake",
             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-            "-DCMAKE_BUILD_TYPE=Debug",
+            "-DCMAKE_BUILD_TYPE=DEBUG",
             "-B",
             str(BUILD_DIR),
         ]
@@ -51,12 +51,33 @@ def dev():
     Path(Path.cwd(), "compile_commands.json").symlink_to(CMAKE_DB_PATH)
 
 
+def prod():
+    subprocess.run(
+        [
+            "cmake",
+            "-DCMAKE_BUILD_TYPE=RELEASE",
+            "-B",
+            str(BUILD_DIR),
+        ]
+    )
+
+
 if __name__ == "__main__":
     args = docopt(__doc__, version=VERSION)
+
     if not Path(Path.cwd(), "./CMakeLists.txt").exists():
         sys.exit("Missing CMakeLists.txt")
 
-    if args.get("dev") or not args.get("clean"):
+    if not BUILD_DIR.exists():
+        BUILD_DIR.mkdir()
+
+    if args.get("prod"):
+        if args.get("-f"):
+            clean()
+        elif not dir_empty(BUILD_DIR):
+            sys.exit("Build dir already exists! Override with -f")
+        prod()
+    elif args.get("dev"):
         if args.get("-f"):
             clean()
         elif not dir_empty(BUILD_DIR):
