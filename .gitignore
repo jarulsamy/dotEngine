@@ -1,3 +1,13 @@
+# VS
+.vscode/
+
+# Vi autocompletion stuff
+.cache/
+compile_commands.json
+
+# Build dirs
+build/
+
 # binaries
 bin/
 obj/
