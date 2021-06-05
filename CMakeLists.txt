@@ -55,8 +55,5 @@ include_directories(${CURL_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} curl cjson)
 
 # Compiler warnings, platform specific.
-if(MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-else()
-  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -pedantic -Werror)
-endif()
+add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O3;-pedantic>")
+add_compile_options("$<$<CONFIG:DEBUG>:-W;-Wall;-O0;-g;-pedantic>")
