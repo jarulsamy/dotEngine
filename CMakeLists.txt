@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 project(
   dotEngine
   VERSION 1.0
-  DESCRIPTION "DotEngine, TODO"
+  DESCRIPTION "An overkill way to retrieve (and cache) data from the GitHub API."
   LANGUAGES C)
 configure_file(src/config.h.in config.h)
 
