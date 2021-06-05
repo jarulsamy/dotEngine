@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int cURL_str_init(struct cURL_str *str)
+int http_str_init(struct http_str *str)
 {
   str->length = 0;
   str->data = malloc(str->length + 1);
@@ -18,14 +18,14 @@ int cURL_str_init(struct cURL_str *str)
   return 1;
 }
 
-void cURL_str_free(struct cURL_str *str)
+void http_str_free(struct http_str *str)
 {
   str->length = -1;
   free(str->data);
   str->data = NULL;
 }
 
-void cURL_str_print(struct cURL_str *str)
+void http_str_print(struct http_str *str)
 {
   for (int i = 0; i < str->length; i++)
   {
@@ -36,7 +36,7 @@ void cURL_str_print(struct cURL_str *str)
 
 // Callback for curl fetch
 static size_t curl_callback(void *contents, size_t size, size_t nmemb,
-                            struct cURL_str *p)
+                            struct http_str *p)
 {
   size_t real_size = size * nmemb;  // calculate buffer size
 
@@ -70,8 +70,8 @@ int http_get(char const *url, char **result)
   CURLcode res;
 
   // Temporary string to dynamically fill with HTTP contents
-  struct cURL_str *str = malloc(sizeof(*str));
-  if (str == NULL || !cURL_str_init(str))
+  struct http_str *str = malloc(sizeof(*str));
+  if (str == NULL || !http_str_init(str))
   {
     return 0;
   }
