@@ -1,9 +1,81 @@
 #include "repo.h"
 
+#include <ctype.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <time.h>
 
 #include "cJSON.h"
+
+int valid_cache(const char* filename)
+{
+  struct stat cache;
+  struct timespec current;
+
+  // If the cache is not available, or we can't check the current time.
+  if (stat(filename, &cache) != 0 ||
+      clock_gettime(CLOCK_REALTIME, &current) < 0)
+  {
+    return 0;
+  }
+
+#ifndef NDEBUG
+  printf("The cache is %d seconds old.\n",
+         abs(difftime(cache.st_mtime, current.tv_sec)));
+#endif
+
+  // If the modification time of the cache file is over 1 day old
+  if (abs(difftime(cache.st_mtime, current.tv_sec)) > 60 * 60 * 24)
+  {
+    return 0;
+  }
+
+  return 1;
+}
+
+// Shamelessly stolen from glibc.
+#ifndef strdup
+// Duplicate S, returning an identical malloc'd string.
+char* strdup(const char* s)
+{
+  size_t len = strlen(s) + 1;
+  void* new = malloc(len);
+  if (new == NULL) return NULL;
+  return (char*)memcpy(new, s, len);
+}
+#endif /* strdup */
+
+static char* trim(char* s)
+{
+  int l = strlen(s);
+
+  while (isspace(s[l - 1])) --l;
+  while (*s && isspace(*s)) ++s, --l;
+
+  return strndup(s, l);
+}
+
+static char* clean(char* s)
+{
+  char* str = trim(s);
+
+  // Remove apostophes, messes with zsh auto completion.
+  for (int i = 0, j; str[i] != '\0'; ++i)
+  {
+    while (str[i] == '"' && !(str[i] == '\0'))
+    {
+      for (j = i; str[j] != '\0'; ++j)
+      {
+        str[j] = str[j + 1];
+      }
+      str[j] = '\0';
+    }
+  }
+
+  return str;
+}
 
 // Initialize with all NULL values
 void repo_init(struct repo* r)
@@ -17,7 +89,7 @@ void repo_init(struct repo* r)
   r->html_url = NULL;
 }
 
-void free_repo(const struct repo* r)
+void repo_free(const struct repo* r)
 {
   free(r->name);
   free(r->owner);
@@ -58,6 +130,16 @@ void repo_print_pretty(const struct repo* r)
 
 void repo_print_zshsuggestion(const struct repo* repos, const size_t num)
 {
+  /* Sample ZSH autcompletion entry
+
+  _dotEngine() {
+    _describe 'command' "($(/PATH/TO/dotEngine -z))"
+  }
+  compdef _dotEngine dotEngine
+
+  Substitute dotEngine with whatever command you may like.
+  */
+
   if (repos == NULL)
   {
     return;
@@ -65,24 +147,25 @@ void repo_print_zshsuggestion(const struct repo* repos, const size_t num)
 
   for (size_t i = 0; i < num; i++)
   {
-    printf("'%s:%s ", repos[i].name, repos[i].description);
+    char* name = repos[i].name;
+    char* descrip = repos[i].description;
+
+    if (name == NULL)
+    {
+      continue;
+    }
+    if (descrip == NULL || strcmp(descrip, "(null)") == 0)
+    {
+      descrip = name;
+    }
+
+    // printf("%s\n\t%s\n", name, descrip);
+    printf("\"%s:%s\"\n", name, descrip);
   }
   putc('\n', stdout);
 }
 
-// Shamelessly stolen from glibc.
-#ifndef strdup
-// Duplicate S, returning an identical malloc'd string.
-char* strdup(const char* s)
-{
-  size_t len = strlen(s) + 1;
-  void* new = malloc(len);
-  if (new == NULL) return NULL;
-  return (char*)memcpy(new, s, len);
-}
-#endif /* strdup */
-
-int parse_repos(const char* str, struct repo** repos, size_t* count)
+int repo_parse(const char* str, struct repo** repos, size_t* count)
 {
   const size_t MAX_REPOS = 250;
 
@@ -250,13 +333,13 @@ int repo_from_file(FILE* fp, struct repo** repos, size_t* num)
     buffer_html_url[strcspn(buffer_html_url, "\n")] = '\0';
 
     // Copy them to the structs
-    (*repos)[*num].name = strdup(buffer_name);
-    (*repos)[*num].owner = strdup(buffer_owner);
-    (*repos)[*num].description = strdup(buffer_description);
-    (*repos)[*num].git_url = strdup(buffer_git_url);
-    (*repos)[*num].ssh_url = strdup(buffer_ssh_url);
-    (*repos)[*num].clone_url = strdup(buffer_clone_url);
-    (*repos)[*num].html_url = strdup(buffer_html_url);
+    (*repos)[*num].name = clean(buffer_name);
+    (*repos)[*num].owner = clean(buffer_owner);
+    (*repos)[*num].description = clean(buffer_description);
+    (*repos)[*num].git_url = clean(buffer_git_url);
+    (*repos)[*num].ssh_url = clean(buffer_ssh_url);
+    (*repos)[*num].clone_url = clean(buffer_clone_url);
+    (*repos)[*num].html_url = clean(buffer_html_url);
 
     (*num)++;
   } while (status != NULL);

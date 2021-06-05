@@ -61,7 +61,7 @@ int main(int argc, char** argv)
   int ret = 0;
 
   // Try to use the cache
-  if (!arguments.force && access(CACHE_FNAME, F_OK) == 0)
+  if (!arguments.force && valid_cache(CACHE_FNAME))
   {
     // Read from disk
     FILE* read_fp = fopen(CACHE_FNAME, "r");
@@ -94,7 +94,7 @@ cleanup:
   {
     for (size_t i = 0; i < num_repos; i++)
     {
-      free_repo(&repos[i]);
+      repo_free(&repos[i]);
     }
     free(repos);
   }
@@ -189,7 +189,7 @@ int github_get(struct repo** repos, size_t* num_repos)
   }
 
   // Parse the response from Github
-  if (!parse_repos(raw_data, repos, num_repos) || repos == NULL)
+  if (!repo_parse(raw_data, repos, num_repos) || repos == NULL)
   {
     fprintf(stderr, "Couldn't parse response from GitHub API.\n");
     ret = 1;
