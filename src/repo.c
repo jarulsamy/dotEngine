@@ -22,8 +22,8 @@ int valid_cache(const char* filename)
   }
 
 #ifndef NDEBUG
-  printf("The cache is %d seconds old.\n",
-         abs(difftime(cache.st_mtime, current.tv_sec)));
+  fprintf(stderr, "The cache is %d seconds old.\n",
+          abs(difftime(cache.st_mtime, current.tv_sec)));
 #endif
 
   // If the modification time of the cache file is over 1 day old

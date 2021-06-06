@@ -175,9 +175,9 @@ int github_get(struct repo** repos, size_t* num_repos)
   snprintf(url, sz, base_url, config.username);
 
 #ifndef NDEBUG
-  printf("Config loaded from '%s': name=%s, email=%s, username=%s\n", full_path,
-         config.name, config.email, config.username);
-  printf("URL: %s\n", url);
+  fprintf(stderr, "Config loaded from '%s': name=%s, email=%s, username=%s\n",
+          full_path, config.name, config.email, config.username);
+  fprintf(stderr, "URL: %s\n", url);
 #endif
 
   // Talk to the API
