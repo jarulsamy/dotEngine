@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 project(
   dotEngine
   VERSION 1.1
-  DESCRIPTION "An overkill way to retrieve (and cache) data from the GitHub API."
+  DESCRIPTION
+    "An overkill way to retrieve (and cache) data from the GitHub API."
   LANGUAGES C)
 configure_file(src/config.h.in config.h)
 
@@ -57,3 +58,16 @@ target_link_libraries(${PROJECT_NAME} curl cjson)
 # Compiler warnings, platform specific.
 add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O3;-pedantic>")
 add_compile_options("$<$<CONFIG:DEBUG>:-W;-Wall;-O0;-g;-pedantic>")
+
+# Install
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX
+      "~/.local/"
+      CACHE PATH "..." FORCE)
+endif()
+message("CMAKE_INSTALL_PREFIX:" ${CMAKE_INSTALL_PREFIX})
+
+install(
+  TARGETS ${PROJECT_NAME}
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
