@@ -15,4 +15,5 @@ void http_str_print(struct http_str* str);
 
 // Perform an HTTP GET and grab the result to str
 // int http_get(char const* url, struct cURL_str* str);
-int http_get(char const* url, char** result);
+long http_get(char const* url, char** result, const char* username,
+              const char* password);
