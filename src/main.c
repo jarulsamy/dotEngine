@@ -1,7 +1,9 @@
 #include <argp.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "config.h"
@@ -41,6 +43,7 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 
 /* Constants */
 const char base_url[] = "https://api.github.com/users/%s/repos?per_page=250";
+const char base_url_auth[] = "https://api.github.com/user/repos?per_page=250";
 const char* CACHE_FNAME = "/tmp/dotEngine.dat";
 
 int main(int argc, char** argv)
@@ -154,7 +157,7 @@ int github_get(struct repo** repos, size_t* num_repos)
   strcpy(full_path, home);
   strcat(full_path, filename);
 
-  // Load username from file
+  // Load username and password from file
   if (ini_parse(full_path, config_ini_handler, &config) < 0 ||
       config.username == NULL)
   {
@@ -163,27 +166,52 @@ int github_get(struct repo** repos, size_t* num_repos)
     goto cleanup;
   }
 
-  // Get the real url to GitHub API
-  size_t sz = snprintf(NULL, 0, base_url, config.username) + 1;
-  url = (char*)malloc(sz);
+  if (config.password == NULL)
+  {
+    config.password = strdup(getenv("DOTENGINE_GHPWD"));
+  }
+
+  // We've checked everywhere, no password found so don't authenticate.
+  if (config.password == NULL)
+  {
+    // Get the real url to GitHub API
+    size_t sz = snprintf(NULL, 0, base_url, config.username) + 1;
+    url = (char*)malloc(sz);
+    snprintf(url, sz, base_url, config.username);
+  }
+  else
+  {
+    url = strdup(base_url_auth);
+  }
   if (url == NULL)
   {
     fprintf(stderr, "Couldn't allocate memory!");
     ret = 0;
     goto cleanup;
   }
-  snprintf(url, sz, base_url, config.username);
 
 #ifndef NDEBUG
-  fprintf(stderr, "Config loaded from '%s': name=%s, email=%s, username=%s\n",
-          full_path, config.name, config.email, config.username);
+  fprintf(
+      stderr,
+      "Config loaded from '%s': name=%s, email=%s, username=%s password=%s\n",
+      full_path, config.name, config.email, config.username, config.password);
   fprintf(stderr, "URL: %s\n", url);
 #endif
 
   // Talk to the API
-  if (!http_get(url, &raw_data))
+  long http_code = http_get(url, &raw_data, config.username, config.password);
+  if (http_code == 401)
   {
-    fprintf(stderr, "Can't connect to Github API... internet connectivity?\n");
+    fprintf(stderr, "Unauthorized, check username and password.\n");
+    ret = 1;
+    goto cleanup;
+  }
+  else if (http_code != 200)
+  {
+    fprintf(stderr,
+            "Can't connect to Github API... internet connectivity?, HTTP "
+            "Status: %li\n",
+            http_code);
     ret = 1;
     goto cleanup;
   }

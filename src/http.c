@@ -63,11 +63,12 @@ static size_t curl_callback(void *contents, size_t size, size_t nmemb,
   return real_size;
 }
 
-// int http_get(char const *url, struct cURL_str *str)
-int http_get(char const *url, char **result)
+long http_get(char const *url, char **result, const char *username,
+              const char *password)
 {
-  CURL *curl;
-  CURLcode res;
+  CURL *session;
+  CURLcode curl_code;
+  long http_code = 0;
 
   // Temporary string to dynamically fill with HTTP contents
   struct http_str *str = malloc(sizeof(*str));
@@ -76,30 +77,36 @@ int http_get(char const *url, char **result)
     return 0;
   }
 
-  curl = curl_easy_init();
-  if (curl)
+  session = curl_easy_init();
+  if (session)
   {
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, str);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+    curl_easy_setopt(session, CURLOPT_URL, url);
+    curl_easy_setopt(session, CURLOPT_WRITEFUNCTION, curl_callback);
+    curl_easy_setopt(session, CURLOPT_WRITEDATA, str);
+    curl_easy_setopt(session, CURLOPT_USERAGENT, "dotEngine/1.0");
+    curl_easy_setopt(session, CURLOPT_TIMEOUT, 15);
+    curl_easy_setopt(session, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(session, CURLOPT_MAXREDIRS, 1);
+
+    // Optionally include username and password for auth
+    if (username != NULL && password != NULL)
+    {
+      curl_easy_setopt(session, CURLOPT_USERNAME, username);
+      curl_easy_setopt(session, CURLOPT_PASSWORD, password);
+      curl_easy_setopt(session, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    }
 
     // Fetch the URL
-    res = curl_easy_perform(curl);
+    curl_code = curl_easy_perform(session);
 
     // Move from tmp to actual result.
     *result = str->data;
 
-    curl_easy_cleanup(curl);
-  }
+    curl_easy_getinfo(session, CURLINFO_RESPONSE_CODE, &http_code);
 
-  free(str);
-  if (res == 0)
-  {
-    return 1;
+    curl_easy_cleanup(session);
   }
-  return 0;
+  free(str);
+
+  return http_code;
 }
