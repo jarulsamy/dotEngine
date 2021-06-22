@@ -166,7 +166,8 @@ int github_get(struct repo** repos, size_t* num_repos)
     goto cleanup;
   }
 
-  if (config.password == NULL)
+  // Password in file supercedes environment variable
+  if (config.password == NULL && getenv("DOTENGINE_GHPWD") != NULL)
   {
     config.password = strdup(getenv("DOTENGINE_GHPWD"));
   }
