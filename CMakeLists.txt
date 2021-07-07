@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 project(
   dotEngine
-  VERSION 1.1
+  VERSION 1.2
   DESCRIPTION
     "An overkill way to retrieve (and cache) data from the GitHub API."
   LANGUAGES C)
