@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 project(
   dotEngine
-  VERSION 1.2
+  VERSION 2.0
   DESCRIPTION
     "An overkill way to retrieve (and cache) data from the GitHub API."
-  LANGUAGES C)
+  LANGUAGES C CXX)
 configure_file(src/config.h.in config.h)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Include external dependencies
 include(FetchContent)
@@ -19,30 +19,21 @@ FetchContent_Declare(
   GIT_REPOSITORY "https://github.com/benhoyt/inih"
   GIT_TAG "4f251f0ff766052c342823dfa52a04f486cc4f94")
 
-FetchContent_Declare(
-  cJSON
-  GIT_REPOSITORY "https://github.com/DaveGamble/cJSON"
-  GIT_TAG "324a6ac9a9b285ff7a5a3e5b2071e3624b94f2db")
+FetchContent_MakeAvailable(inih)
+include_directories(${inih_SOURCE_DIR})
+include_directories(${inih_SOURCE_DIR}/cpp)
 
-# Disable building of tests and utils for cJSON
-set(ENABLE_CJSON_TEST
-    OFF
-    CACHE INTERNAL "Disable tests")
-set(ENABLE_CJSON_UTILS
-    OFF
-    CACHE INTERNAL "Disable Utils")
-
-FetchContent_MakeAvailable(inih cJSON)
-include_directories(${inih_SOURCE_DIR} ${cJSON_SOURCE_DIR})
+# inih options
+add_definitions(-DINI_ALLOW_MULTILINE=0)
 
 # Add src files
 set(SRC_FILES
-    ${PROJECT_SOURCE_DIR}/src/http.c
-    ${PROJECT_SOURCE_DIR}/src/io.c
-    ${PROJECT_SOURCE_DIR}/src/main.c
-    ${PROJECT_SOURCE_DIR}/src/repo.c
+    ${PROJECT_SOURCE_DIR}/src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/userconfig.cpp
+    ${PROJECT_SOURCE_DIR}/src/gh.cpp
     # External dependencies, inih doesn't use cmake
-    ${inih_SOURCE_DIR}/ini.c)
+    ${inih_SOURCE_DIR}/ini.c
+    ${inih_SOURCE_DIR}/cpp/INIReader.cpp)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 # Include for config
@@ -52,22 +43,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_BINARY_DIR}")
 find_package(CURL REQUIRED)
 include_directories(${CURL_INCLUDE_DIR})
 
+# Boost
+find_package(Boost 1.67.0 REQUIRED COMPONENTS json)
+include_directories(${BOOST_INCLUDE_DIR})
+
 # Linking
-target_link_libraries(${PROJECT_NAME} curl cjson)
+target_link_libraries(${PROJECT_NAME} curl Boost::json)
 
 # Compiler warnings, platform specific.
 add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O3;-pedantic>")
 add_compile_options("$<$<CONFIG:DEBUG>:-W;-Wall;-O0;-g;-pedantic>")
-
-# Install
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX
-      "~/.local/"
-      CACHE PATH "..." FORCE)
-endif()
-message("CMAKE_INSTALL_PREFIX:" ${CMAKE_INSTALL_PREFIX})
-
-install(
-  TARGETS ${PROJECT_NAME}
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
