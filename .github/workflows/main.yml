@@ -15,27 +15,22 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      # Install and cache dependencies
-      - name: Cache boost
-        uses: actions/cache@v1.0.3
-        id: cache-boost
-        with:
-          path: "~/boost"
-          key: libboost-all-dev
-
-      - name: Install boost
-        env:
-          CACHE_HIT: ${{steps.cache-boost.outputs.cache-hit}}
+      - name: Install tools
         run: |
-          if [[ "$CACHE_HIT" == 'true' ]]; then
-            sudo cp --force --recursive ~/boost/* /
-          else
-            sudo apt-get update && sudo apt-get install -yq libboost-all-dev
-            mkdir -p ~/boost
-            for dep in libboost-all-dev; do
-                dpkg -L $dep | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/boost/
-            done
-          fi
+          sudo apt-get update
+          sudo apt-get install -yq wget tar cmake
+
+      - name: Download boost
+        working-directory: ${{github.workspace}}
+        run: |
+          wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz
+          tar -xzf boost_1_77_0.tar.gz
+
+      - name: Compile and install boost
+        working-directory: ${{github.workspace}}/boost_1_77_0
+        run: |
+          ./bootstrap.sh
+          sudo ./b2 --with-json install
 
       - name: Install libcurl
         run: sudo apt-get install -yq libcurl4-openssl-dev
