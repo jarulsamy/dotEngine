@@ -44,5 +44,5 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v1
         with:
-          name: Upload binary
+          name: dotEngine
           path: ${{github.workspace}}/build/dotEngine
