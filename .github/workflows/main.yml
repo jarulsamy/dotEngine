@@ -1,0 +1,53 @@
+name: Build
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+env:
+  BUILD_TYPE: RELEASE
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Install and cache dependencies
+      - name: Cache boost
+        uses: actions/cache@v1.0.3
+        id: cache-boost
+        with:
+          path: "~/boost"
+          key: libboost-all-dev
+
+      - name: Install boost
+        env:
+          CACHE_HIT: ${{steps.cache-boost.outputs.cache-hit}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --force --recursive ~/boost/* /
+          else
+            sudo apt-get update && sudo apt-get install -yq libboost-all-dev
+            mkdir -p ~/boost
+            for dep in libboost-all-dev; do
+                dpkg -L $dep | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/boost/
+            done
+          fi
+
+      - name: Install libcurl
+        run: sudo apt-get install -yq libcurl4-openssl-dev
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v1
+        with:
+          name: Upload binary
+          path: ${{github.workspace}}/build/dotEngine
