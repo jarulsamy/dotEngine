@@ -46,7 +46,7 @@ include_directories(${CURL_INCLUDE_DIR})
 
 # Boost
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.67.0 REQUIRED COMPONENTS json)
+find_package(Boost 1.75.0 REQUIRED COMPONENTS json)
 include_directories(${BOOST_INCLUDE_DIR})
 
 # Linking
