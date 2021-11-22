@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 project(
   dotEngine
-  VERSION 2.1
+  VERSION 2.1.1
   DESCRIPTION
     "An overkill way to retrieve (and cache) data from the GitHub API."
   LANGUAGES C CXX)
@@ -53,5 +53,5 @@ include_directories(${BOOST_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PUBLIC curl Boost::json)
 
 # Compiler warnings, platform specific.
-add_compile_options("$<$<CONFIG:RELEASE>:-Wall;-pedantic;-O2")
-add_compile_options("$<$<CONFIG:DEBUG>:-Wall;-pedantic;-O0;-ggdb")
+add_compile_options("$<$<CONFIG:Release>:-Wall;-pedantic;-O2;-DNDEBUG")
+add_compile_options("$<$<CONFIG:Debug>:-Wall;-pedantic;-O0;-ggdb;-fsanitize=address")

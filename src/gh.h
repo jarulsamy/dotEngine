@@ -22,6 +22,7 @@ class GitHub
   void get_repos(const bool& force);
   void write_cache(const std::string& buffer) const;
   bool read_cache();
+  bool stale_cache();
 
  public:
   GitHub(const Config& conf);

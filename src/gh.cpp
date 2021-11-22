@@ -1,6 +1,8 @@
 #include "gh.h"
 
 #include <curl/curl.h>
+#include <sys/stat.h>
+#include <time.h>
 
 #include <algorithm>
 #include <boost/json.hpp>
@@ -34,7 +36,7 @@ static size_t curl_callback(void* contents, size_t size, size_t nmemb,
 
 void GitHub::get_repos(const bool& force)
 {
-  if (read_cache() && !force)
+  if (!force && !stale_cache() && read_cache())
   {
     return;
   }
@@ -75,7 +77,7 @@ void GitHub::get_repos(const bool& force)
 
 void GitHub::write_cache(const std::string& buffer) const
 {
-  std::filesystem::path cache_path = config.get_cache_path();
+  const std::filesystem::path cache_path = config.get_cache_path();
   std::ofstream out_file(cache_path);
   out_file << buffer << std::endl;
   out_file.close();
@@ -83,8 +85,7 @@ void GitHub::write_cache(const std::string& buffer) const
 
 bool GitHub::read_cache()
 {
-  // TODO: Add an age check here.
-  std::filesystem::path cache_path = config.get_cache_path();
+  const std::filesystem::path cache_path = config.get_cache_path();
   std::ifstream in_file(cache_path);
   if (!in_file.is_open())
   {
@@ -105,6 +106,25 @@ bool GitHub::read_cache()
   }
 
   return true;
+}
+
+bool GitHub::stale_cache()
+{
+  const std::filesystem::path cache_path = config.get_cache_path();
+  struct stat cache;
+  struct timespec current;
+
+  if (stat(cache_path.string().c_str(), &cache) != 0 ||
+      clock_gettime(CLOCK_REALTIME, &current) < 0)
+  {
+    return true;
+  }
+  if (difftime(cache.st_mtime, current.tv_sec) > 5 * 60)
+  {
+    return true;
+  }
+
+  return false;
 }
 
 static std::string& clean(std::string& str)
