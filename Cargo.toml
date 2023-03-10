@@ -1,0 +1,15 @@
+[package]
+name = "dot-engine"
+about = "An overkill way to retrieve (and cache) data from the GitHub API. The powerhouse of my dotfiles autocompletion. "
+version = "3.0.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.23"
+clap = { version = "4.1.8", features = ["derive"] }
+home = "0.5.4"
+octocrab = "0.18.1"
+rust-ini = "0.18.0"
+serde = "1.0.154"
+serde_json = "1.0.94"
+tokio = { version = "1.26.0", features = ["full"] }

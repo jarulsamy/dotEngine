@@ -1,6 +1,0 @@
-#pragma once
-
-#define dotEngine_VERSION_MAJOR "@dotEngine_VERSION_MAJOR@"
-#define dotEngine_VERSION_MINOR "@dotEngine_VERSION_MINOR@"
-#define dotEngine_VERSION "@dotEngine_VERSION@"
-#define dotEngine_DESCRIPTION "@dotEngine_DESCRIPTION@"
