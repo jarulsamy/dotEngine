@@ -1,6 +1,7 @@
 # DotEngine
 
-An overkill way to retrieve (and cache) data from the GitHub API. The powerhouse of my dotfiles autocompletion.
+An overkill way to retrieve (and cache) data from the GitHub API. The powerhouse
+of my dotfiles autocompletion.
 
 - [DotEngine](#dotengine)
   - [Dependencies](#dependencies)
@@ -10,29 +11,32 @@ An overkill way to retrieve (and cache) data from the GitHub API. The powerhouse
   - [Performance](#performance)
   - [License](#license)
 
-## Dependencies
-
-- cmake >= 3.15
-- A C++ compiler with C++17 support
-- cURL
-- Boost::JSON v1.75+
-
-Any other dependencies should be auto downloaded by cmake.
-
 ## Building
 
-Build with `cmake`. From the root of the repository:
+Standard Rust `cargo` workflow applies.
 
-```
-$ cmake -B ./build -DCMAKE_BUILD_TYPE=Release # Or -DCMAKE_BUILD_TYPE=Debug for a debug build.
-$ cmake --build ./build
+```cli
+$ cargo build
+$ cargo run
 ```
 
-This should produce the `build/dotEngine` binary.
+## Installation
+
+Cargo really is magical.
+
+```cli
+$ cargo install --locked --git https://github.com/jarulsamy/dotEngine --profile release
+```
 
 ## Motivation
 
-The primary goal for this project was initially just to get more acquainted with C. I am much better at C++ than C, and since I use this program almost daily (auto-completion for `clone` and other utilities I also wrote), I decided to rewrite it from scratch in C++. I spent some more time, and statically linked everything I could, so distribution across various Linux distributions is much easier.
+The primary goal for this project was initially just to get more acquainted with
+C. I initially wrote this project in Python and rewrote it in C. Then I wanted
+to get better at C++, so I rewrote the entire thing. After getting bored, and
+wanting to learn Rust, I rewrote it from scratch, again. This has served as a
+nice, easy, starter project for getting better at a language. and since I use
+this program almost daily (auto-completion for `clone` and other utilities I
+also wrote).
 
 ### ZSH Auto-completion Example
 
@@ -44,33 +48,37 @@ ZSH Auto-completion Sample:
 #!/usr/bin/env zsh
 
 _clone() {
-  _describe 'command' "($(/PATH/TO/dotEngine -z))"
+  _describe 'command' "($($HOME/.local/bin/dotEngine -z 2>/dev/null))"
 }
+
 compdef _clone clone
 ```
 
 ## Performance
 
-Prior versions of this program where entirely written in Python and thus were
+Prior versions of this program where entirely written in Python and C++ and thus were
 _much_ slower:
 
 Without Cache:
 
 ```
-Modern (C++): ./dotEngine -fz  0.01s user 0.01s system 4% cpu 0.345 total
-Old (Python): ~/.dotfiles/zfunc/dotEngine/utils.py  0.06s user 0.02s system 7% cpu 1.027 total
+v3 (Rust):   target/release/dot-engine -fz  0.05s user 0.02s system 3% cpu 2.171 total
+v2 (C++):    ./dotEngine -fz  0.01s user 0.01s system 4% cpu 0.345 total
+v1 (Python): ~/.dotfiles/zfunc/dotEngine/utils.py  0.06s user 0.02s system 7% cpu 1.027 total
 ```
 
 With Cache:
 
 ```
-Modern (C): ./dotEngine -z  0.00s user 0.01s system 95% cpu 0.007 total
-Old (Python): ~/.dotfiles/zfunc/dotEngine/utils.py  0.06s user 0.02s system 99% cpu 0.081 total
+v3 (Rust):   target/release/dot-engine -z  0.00s user 0.01s system 154% cpu 0.006 total
+v2: (C++):   ./dotEngine -z  0.00s user 0.01s system 95% cpu 0.007 total
+v1 (Python): ~/.dotfiles/zfunc/dotEngine/utils.py  0.06s user 0.02s system 99% cpu 0.081 total
 ```
 
 Yup. As you can see, absolutely **MASSIVE** performance improvements.
 
-In reality this doesn't really translate to much of a real-world improvement, but I'll take what I can get.
+In reality this doesn't really translate to much of a real-world improvement,
+but I'll take what I can get.
 
 ## License
 
