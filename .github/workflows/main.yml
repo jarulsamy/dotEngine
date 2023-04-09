@@ -2,48 +2,24 @@ name: Build
 
 on:
   push:
-    branches: [main, dev]
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
+    branches: [ "main" ]
   workflow_dispatch:
 
 env:
-  BUILD_TYPE: RELEASE
+  CARGO_TERM_COLOR: always
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --verbose --release
 
-      - name: Install tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -yq wget tar cmake
-
-      - name: Download boost
-        working-directory: ${{github.workspace}}
-        run: |
-          wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz
-          tar -xzf boost_1_77_0.tar.gz
-
-      - name: Compile and install boost
-        working-directory: ${{github.workspace}}/boost_1_77_0
-        run: |
-          ./bootstrap.sh
-          sudo ./b2 --with-json install
-
-      - name: Install libcurl
-        run: sudo apt-get install -yq libcurl4-openssl-dev
-
-      - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-
-      - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-      - name: Upload binary
-        uses: actions/upload-artifact@v1
-        with:
-          name: dotEngine
-          path: ${{github.workspace}}/build/dotEngine
+    - name: Upload
+      uses: actions/upload-artifact@v1
+      with:
+        name: dot-engine
+        path: ${{github.workspace}}/target/release/dot-engine
