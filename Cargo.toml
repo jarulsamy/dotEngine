@@ -1,6 +1,6 @@
 [package]
 name = "dot-engine"
-about = "An overkill way to retrieve (and cache) data from the GitHub API. The powerhouse of my dotfiles autocompletion. "
+description = "An overkill way to retrieve (and cache) data from the GitHub API. The powerhouse of my dotfiles autocompletion."
 version = "3.0.0"
 edition = "2021"
 

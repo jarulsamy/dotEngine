@@ -15,6 +15,7 @@ use std::{
 
 #[derive(Debug)]
 struct UserConfig {
+    #[allow(dead_code)]
     github_username: String,
     github_token: String,
     cache_path: PathBuf,
@@ -223,7 +224,7 @@ fn table(out: &mut (impl Write + ?Sized), data: &Vec<Repository>) -> Result<(), 
     for r in data {
         let descrip = match &r.description {
             Some(x) => x,
-            None => "<None>",
+            None => &r.name,
         };
         writeln!(
             out,
@@ -239,18 +240,14 @@ fn zsh_autocompletion(
     out: &mut (impl Write + ?Sized),
     data: &Vec<Repository>,
 ) -> Result<(), io::Error> {
-    // write!(out, "\"(")?;
-    for i in &data[..1] {
+    for i in data {
         let descrip = match &i.description {
-            Some(x) => "foo",
-            None => "none",
+            Some(x) => x,
+            None => &i.name,
         };
-        if i.name.contains(':') || descrip.contains(':') {
-            continue;
-        }
-        write!(out, "'{}'", i.name)?;
+        let clean_descrip = str::replace(descrip, "\"", "\\\"");
+        write!(out, "\"{}/{}\":\"{}\"\n", i.owner, i.name, clean_descrip)?;
     }
-    // writeln!(out, ")\"")?;
 
     Ok(())
 }
